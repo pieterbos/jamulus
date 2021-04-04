@@ -254,6 +254,9 @@ CClientDlg::CClientDlg ( CClient*         pNCliP,
     pFileMenu->addAction ( tr ( "&Save Mixer Channels Setup..." ), this,
         SLOT ( OnSaveChannelSetup() ) );
 
+    pFileMenu->addAction ( tr ( "&Broadcast Mixer to others..." ), this,
+        SLOT ( OnBroadcastChannelSetup() ) );
+
     pFileMenu->addSeparator();
 
     pFileMenu->addAction ( tr ( "E&xit" ), this,
@@ -839,6 +842,22 @@ void CClientDlg::OnSaveChannelSetup()
         MainMixerBoard->StoreAllFaderSettings();
         pSettings->SaveFaderSettings ( strFileName );
     }
+}
+
+void CClientDlg::OnBroadcastChannelSetup()
+{
+    // QString strFileName = QFileDialog::getSaveFileName ( this,
+    //                                                      tr ( "Select Channel Setup File" ),
+    //                                                      "",
+    //                                                      QString ( "*." ) + MIX_SETTINGS_FILE_SUFFIX );
+
+    // if ( !strFileName.isEmpty() )
+    // {
+    //     // first store all current fader settings (in case we are in an active connection
+    //     // right now) and then save the information in the settings struct in the file
+    //     MainMixerBoard->StoreAllFaderSettings();
+    //     pSettings->SaveFaderSettings ( strFileName );
+    // }
 }
 
 void CClientDlg::OnVersionAndOSReceived ( COSUtil::EOpSystemType ,

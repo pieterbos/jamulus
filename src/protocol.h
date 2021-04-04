@@ -63,6 +63,9 @@
 #define PROTMESSID_RECORDER_STATE             33 // contains the state of the jam recorder (ERecorderState)
 #define PROTMESSID_REQ_SPLIT_MESS_SUPPORT     34 // request support for split messages
 #define PROTMESSID_SPLIT_MESS_SUPPORTED       35 // split messages are supported
+#define PROTMESSID_BROADCAST_MIXER_STATE      38 // Set the broadcast mixer to others state
+#define PROTMESSID_BROADCAST_MIXER_STATE_LIST 39 // A list of broadcast mixer states
+#define PROTMESSID_FOLLOW_BROADCASTED_MIXER   40 // follow or unfollow someone elses mixer state
 
 // message IDs of connection less messages (CLM)
 // DEFINITION -> start at 1000, end at 1999, see IsConnectionLessMessageID

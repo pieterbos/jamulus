@@ -228,6 +228,24 @@ MESSAGES (with connection)
     | 1 byte operating system | 2 bytes number n | n bytes UTF-8 string version |
     +-------------------------+------------------+------------------------------+
 
+- PROTMESSID_BROADCAST_MIXER_STATE: Set the mixer state for a single channel
+
+    +-------------------+------------------------------+
+    | 1 byte channel ID | 1 byte broadcast enabled/disabled |
+    +-------------------+------------------------------+
+
+- PROTMESSID_BROADCAST_MIXER_STATE_LIST: A list of channels that are broadcasting their mix
+
+    for each channel that is broadcasting, will contain a 1 byte channel id
+    if nobody is broadcasting, contains no data, n = 0
+
+- PROTMESSID_FOLLOW_BROADCASTED_MIXER: Indicate which mixer to follow, or to unfollow
+
+    +-------------------+--------------------------------------------------------------+
+    | 1 byte channel ID | 1 byte client wants to follow | 1 byte channel id to follow  |
+    +-------------------+--------------------------------------------------------------+
+
+
 
 // #### COMPATIBILITY OLD VERSION, TO BE REMOVED ####
 - PROTMESSID_OPUS_SUPPORTED: Informs that OPUS codec is supported

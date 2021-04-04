@@ -164,6 +164,7 @@ public slots:
 
     void OnLoadChannelSetup();
     void OnSaveChannelSetup();
+    void OnBroadcastChannelSetup();
     void OnOpenConnectionSetupDialog() { ShowConnectionSetupDialog(); }
     void OnOpenMusicianProfileDialog() { ShowMusicianProfileDialog(); }
     void OnOpenGeneralSettings() { ShowGeneralSettings(); }
