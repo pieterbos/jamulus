@@ -375,6 +375,9 @@ CServer::CServer ( const int          iNewMaxNumChan,
     // allocate worst case memory for the channel levels
     vecChannelLevels.Init ( iMaxNumChannels );
 
+    // allocate worst case memory for the mixer broadcast followers
+    vecMixerFollowers.Init ( iMaxNumChannels );
+
     // enable logging (if requested)
     if ( !strLoggingFileName.isEmpty() )
     {
@@ -824,6 +827,16 @@ static CTimingMeas JitterMeas ( 1000, "test2.dat" ); JitterMeas.Measure(); // TE
             }
         }
 
+        // get mixer followers of all connected channels
+
+        for ( int iChanCnt = 0; iChanCnt < iNumClients; iChanCnt++ )
+        {
+           const int iCurChanID = vecChanIDsCurConChan[iChanCnt];
+           //TODO: should there be another list of booleans instead of saving the current channel id to indicate someone is following its own mixer instead of someone elses?
+           vecMixerFollowers[iCurChanID] = vecChannels[iCurChanID].IsFollowingMixer() ? vecChannels[iCurChanID].GetFollowingMixerChannel() : iCurChanID;
+        }
+
+
         // prepare and decode connected channels
         if ( !bUseMultithreading )
         {
@@ -997,6 +1010,8 @@ void CServer::DecodeReceiveData ( const int iChanCnt,
     // get actual ID of current channel
     const int iCurChanID = vecChanIDsCurConChan[iChanCnt];
 
+    const int iGainChannelId = vecMixerFollowers[iCurChanID];
+
     // get and store number of audio channels and compression type
     vecNumAudioChannels[iChanCnt] = vecChannels[iCurChanID].GetNumAudioChannels();
     vecAudioComprType[iChanCnt]   = vecChannels[iCurChanID].GetAudioCompressionType();
@@ -1050,7 +1065,8 @@ void CServer::DecodeReceiveData ( const int iChanCnt,
     else
     {
         CurOpusDecoder = nullptr;
-    }
+    }    
+
 
     // get gains of all connected channels
     for ( int j = 0; j < iNumClients; j++ )
@@ -1059,7 +1075,7 @@ void CServer::DecodeReceiveData ( const int iChanCnt,
         // the channel ID! Therefore we have to use
         // "vecChanIDsCurConChan" to query the IDs of the currently
         // connected channels
-        vecvecfGains[iChanCnt][j] = vecChannels[iCurChanID].GetGain ( vecChanIDsCurConChan[j] );
+        vecvecfGains[iChanCnt][j] = vecChannels[iGainChannelId].GetGain ( vecChanIDsCurConChan[j] );
 
         // consider audio fade-in
         vecvecfGains[iChanCnt][j] *= vecChannels[vecChanIDsCurConChan[j]].GetFadeInGain();
@@ -1068,11 +1084,11 @@ void CServer::DecodeReceiveData ( const int iChanCnt,
         // as well to avoid the client volumes are at 100% when joining a server (#628)
         if ( j != iChanCnt )
         {
-            vecvecfGains[iChanCnt][j] *= vecChannels[iCurChanID].GetFadeInGain();
+            vecvecfGains[iChanCnt][j] *= vecChannels[iGainChannelId].GetFadeInGain();
         }
 
         // panning
-        vecvecfPannings[iChanCnt][j] = vecChannels[iCurChanID].GetPan ( vecChanIDsCurConChan[j] );
+        vecvecfPannings[iChanCnt][j] = vecChannels[iGainChannelId].GetPan ( vecChanIDsCurConChan[j] );
     }
 
     // If the server frame size is smaller than the received OPUS frame size, we need a conversion

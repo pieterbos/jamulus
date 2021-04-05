@@ -387,6 +387,9 @@ protected:
     // Channel levels
     CVector<uint16_t>          vecChannelLevels;
 
+    // mixer broadcast following
+    CVector<int>               vecMixerFollowers;
+
     // actual working objects
     CHighPrioSocket            Socket;
 

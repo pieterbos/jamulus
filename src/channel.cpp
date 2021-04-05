@@ -174,6 +174,13 @@ void CChannel::SetEnable ( const bool bNEnStat )
     }
 }
 
+bool CChannel::IsBroadcastingMixer()
+{
+    QMutexLocker locker ( &Mutex );
+
+    return bBroadcastMixer;
+}
+
 void CChannel::OnVersionAndOSReceived ( COSUtil::EOpSystemType eOSType,
                                         QString                strVersion )
 {
@@ -383,13 +390,31 @@ void CChannel::SetChanInfo ( const CChannelCoreInfo& NChanInf )
 }
 
 void CChannel::SetRemoteBroadcastMixerState (bool eBroadcastMixer) {
+
+    QMutexLocker locker ( &Mutex );
+
     bBroadcastMixer = eBroadcastMixer;
+
     Protocol.CreateBroadcastMixerStateMes( bBroadcastMixer);
 }
 
-void CChannel::CreateFollowMixerBroadcasterMes( bool bFollow, int iBroadcaster)
+void CChannel::CreateFollowMixerBroadcasterMes( bool eFollow, int eBroadcaster)
 {
-    Protocol.CreateFollowBroadcastedMixerMes( bFollow, iBroadcaster );
+    QMutexLocker locker ( &Mutex );
+
+    bFollowMixer = eFollow;
+    iFollowMixerChannel = eBroadcaster;
+    Protocol.CreateFollowBroadcastedMixerMes( eFollow, eBroadcaster );
+}
+
+bool CChannel::IsFollowingMixer() {
+    QMutexLocker locker ( &Mutex );
+
+    return bFollowMixer;
+}
+
+int CChannel::GetFollowingMixerChannel() {
+    return iFollowMixerChannel;
 }
 
 QString CChannel::GetName()
@@ -557,7 +582,7 @@ void CChannel::OnBroadcastMixerStateReceived ( bool eIsBroadcastingMixer ) {
     }
 }
 
-void CChannel::OnFollowBroadcastReceived ( bool bIsFollowing, int iChanIdToFollow ) {
+void CChannel::OnFollowBroadcastReceived ( bool eIsFollowing, int eChanIdToFollow ) {
     // only the server shall act on mixer broadcast state received
     if ( bIsServer ) {
         Mutex.lock();
@@ -565,10 +590,13 @@ void CChannel::OnFollowBroadcastReceived ( bool bIsFollowing, int iChanIdToFollo
         // should store that the client is following a specific channel
         // then send an event to the Server.
         // might just be for the server to handle instead of here, not sure?
+        bFollowMixer = eIsFollowing;
+        iFollowMixerChannel = eChanIdToFollow;
+
         Mutex.unlock();
-        emit FollowBroadcastReceived(bIsFollowing, iChanIdToFollow);
+        emit FollowBroadcastReceived(bFollowMixer, iFollowMixerChannel);
         qInfo() << qUtf8Printable( QString( "channel %1 following %2: %3" )
-            .arg(ChannelInfo.strName).arg( iChanIdToFollow ).arg( bIsFollowing ) );
+            .arg(ChannelInfo.strName).arg( iFollowMixerChannel ).arg( bFollowMixer ) );
     }
 }
 

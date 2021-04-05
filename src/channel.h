@@ -93,7 +93,10 @@ public:
 
     void SetEnable ( const bool bNEnStat );
     bool IsEnabled() { return bIsEnabled; }
-    bool IsBroadcastingMixer() { return bBroadcastMixer; }
+
+    bool IsBroadcastingMixer();
+    bool IsFollowingMixer();
+    int GetFollowingMixerChannel();
 
     void SetAddress ( const CHostAddress NAddr ) { InetAddr = NAddr; }
     bool GetAddress ( CHostAddress& RetAddr );
