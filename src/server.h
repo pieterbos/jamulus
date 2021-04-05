@@ -141,6 +141,11 @@ public:
         CreateAndSendJitBufMessage ( slotId - 1, iNNumFra );
     }
 
+    void OnBroadcastMixerStateReceived( bool bIsBroadcastingMixer )
+    {
+        CreateAndSendBroadcastersListForAllConChannels();
+    }
+
 protected:
     virtual void SendProtMessage ( int              iChID,
                                    CVector<uint8_t> vecMessage ) = 0;
@@ -156,6 +161,8 @@ protected:
 
     virtual void CreateAndSendJitBufMessage ( const int iCurChanID,
                                               const int iNNumFra ) = 0;
+
+    virtual void CreateAndSendBroadcastersListForAllConChannels();
 };
 
 template<>
@@ -285,10 +292,12 @@ protected:
     int FindChannel ( const CHostAddress& CheckAddr );
     int GetNumberOfConnectedClients();
     CVector<CChannelInfo> CreateChannelList();
+    CVector<int> CreateBroadcastersList();
 
     virtual void CreateAndSendChanListForAllConChannels();
     virtual void CreateAndSendChanListForThisChan ( const int iCurChanID );
 
+    virtual void CreateAndSendBroadcastersListForAllConChannels();
     virtual void CreateAndSendChatTextForAllConChannels ( const int      iCurChanID,
                                                           const QString& strChatText );
 

@@ -525,6 +525,9 @@ inline void CServer::connectChannelSignalsToServerSlots()
     void ( CServer::* pOnServerAutoSockBufSizeChangeCh )( int ) =
         &CServerSlots<slotId>::OnServerAutoSockBufSizeChangeCh;
 
+    void ( CServer::* pOnBroadcastMixerStateReceived )( bool ) =
+        &CServerSlots<slotId>::OnBroadcastMixerStateReceived;
+
     // send message
     QObject::connect ( &vecChannels[iCurChanID], &CChannel::MessReadyForSending,
                        this, pOnSendProtMessCh );
@@ -548,6 +551,11 @@ inline void CServer::connectChannelSignalsToServerSlots()
     // auto socket buffer size change
     QObject::connect ( &vecChannels[iCurChanID], &CChannel::ServerAutoSockBufSizeChange,
                        this, pOnServerAutoSockBufSizeChangeCh );
+
+    // mixer broadcasting state has changed
+    QObject::connect ( &vecChannels[iCurChanID], &CChannel::BroadcastMixerStateReceived,
+                       this, pOnBroadcastMixerStateReceived);
+
 
     connectChannelSignalsToServerSlots<slotId - 1>();
 }
@@ -1446,6 +1454,45 @@ void CServer::CreateAndSendChanListForAllConChannels()
     {
         WriteHTMLChannelList();
     }
+}
+
+CVector<int> CServer::CreateBroadcastersList()
+{
+    CVector<int> vecBroadcasters ( 0 );
+
+    // look for free channels
+    for ( int i = 0; i < iMaxNumChannels; i++ )
+    {
+        if ( vecChannels[i].IsConnected() && vecChannels[i].IsBroadcastingMixer())
+        {
+            // append channel ID, IP address and channel name to storing vectors
+            vecBroadcasters.Add ( i );
+        }
+    }
+
+    return vecBroadcasters;
+}
+
+void CServer::CreateAndSendBroadcastersListForAllConChannels()
+{
+    // create broadcasters list
+    CVector<int> vecBroadcastersList ( CreateBroadcastersList() );
+
+    // now send connected channels list to all connected clients
+    for ( int i = 0; i < iMaxNumChannels; i++ )
+    {
+        if ( vecChannels[i].IsConnected() )
+        {
+            // send message
+            vecChannels[i].CreateMixerBroadcastersListMes ( vecBroadcastersList );
+        }
+    }
+
+    //TODO: create status HTML file if enabled. Is this needed in this output??
+//    if ( bWriteStatusHTMLFile )
+//    {
+//        WriteHTMLChannelList();
+//    }
 }
 
 void CServer::CreateAndSendChanListForThisChan ( const int iCurChanID )

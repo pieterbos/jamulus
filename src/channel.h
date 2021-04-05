@@ -93,6 +93,7 @@ public:
 
     void SetEnable ( const bool bNEnStat );
     bool IsEnabled() { return bIsEnabled; }
+    bool IsBroadcastingMixer() { return bBroadcastMixer; }
 
     void SetAddress ( const CHostAddress NAddr ) { InetAddr = NAddr; }
     bool GetAddress ( CHostAddress& RetAddr );
@@ -111,6 +112,7 @@ public:
     void CreateReqChanInfoMes() { Protocol.CreateReqChanInfoMes(); }
     void CreateVersionAndOSMes() { Protocol.CreateVersionAndOSMes(); }
     void CreateMuteStateHasChangedMes ( const int iChanID, const bool bIsMuted ) { Protocol.CreateMuteStateHasChangedMes ( iChanID, bIsMuted ); }
+    void CreateMixerBroadcastersListMes(CVector<int> broadcasters) { Protocol.CreateBroadcastMixerStateListMes( broadcasters ); }
 
     void SetGain ( const int iChanID, const float fNewGain );
     float GetGain ( const int iChanID );
