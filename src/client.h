@@ -142,6 +142,9 @@ public:
     int  GetAudioInFader() const { return iAudioInFader; }
     void SetAudioInFader ( const int iNV ) { iAudioInFader = iNV; }
 
+    bool GetBroadcastMixer() const { return bBroadcastMixer; }
+    void SetBroadcastMixer(const bool eBroadcastMixer);
+
     int  GetReverbLevel() const { return iReverbLevel; }
     void SetReverbLevel ( const int iNL ) { iReverbLevel = iNL; }
 
@@ -359,6 +362,7 @@ protected:
     bool                    bJitterBufferOK;
     bool                    bNuteMeInPersonalMix;
     QMutex                  MutexDriverReinit;
+    bool                    bBroadcastMixer;
 
     // server settings
     int                     iServerSockBufNumFrames;

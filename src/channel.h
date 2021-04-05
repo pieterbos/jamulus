@@ -106,6 +106,8 @@ public:
     void SetRemoteInfo ( const CChannelCoreInfo ChInfo )
         { Protocol.CreateChanInfoMes ( ChInfo ); }
 
+    void SetRemoteBroadcastMixerState (bool bBroadcastMixer);
+
     void CreateReqChanInfoMes() { Protocol.CreateReqChanInfoMes(); }
     void CreateVersionAndOSMes() { Protocol.CreateVersionAndOSMes(); }
     void CreateMuteStateHasChangedMes ( const int iChanID, const bool bIsMuted ) { Protocol.CreateMuteStateHasChangedMes ( iChanID, bIsMuted ); }
@@ -220,6 +222,11 @@ protected:
 
     // network protocol
     CProtocol               Protocol;
+
+    //mixer state broadcasting
+    bool                    bBroadcastMixer;
+    bool                    bFollowMixer;
+    int                     iFollowMixerChannel;
 
     int                     iConTimeOut;
     int                     iConTimeOutStartVal;

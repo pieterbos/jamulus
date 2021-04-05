@@ -846,18 +846,7 @@ void CClientDlg::OnSaveChannelSetup()
 
 void CClientDlg::OnBroadcastChannelSetup()
 {
-    // QString strFileName = QFileDialog::getSaveFileName ( this,
-    //                                                      tr ( "Select Channel Setup File" ),
-    //                                                      "",
-    //                                                      QString ( "*." ) + MIX_SETTINGS_FILE_SUFFIX );
-
-    // if ( !strFileName.isEmpty() )
-    // {
-    //     // first store all current fader settings (in case we are in an active connection
-    //     // right now) and then save the information in the settings struct in the file
-    //     MainMixerBoard->StoreAllFaderSettings();
-    //     pSettings->SaveFaderSettings ( strFileName );
-    // }
+    pClient->SetBroadcastMixer(true); //TODO: toggle, or create second function/method/procedure/whatever the name is in C++
 }
 
 void CClientDlg::OnVersionAndOSReceived ( COSUtil::EOpSystemType ,

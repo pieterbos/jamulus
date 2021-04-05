@@ -136,6 +136,10 @@ public:
 void CreateReqChannelLevelListMes();
 
     void CreateVersionAndOSMes();
+    void CreateBroadcastMixerStateMes(const bool bIsBroadcastingMixer);
+    void CreateBroadcastMixerStateListMes(const CVector<int> broadcasters);
+    void CreateFollowBroadcastedMixerMes(const bool bIsFollowing, const int iChanIdToFollow);
+
     void CreateRecorderStateMes ( const ERecorderState eRecorderState );
 
     void CreateCLPingMes               ( const CHostAddress& InetAddr, const int iMs );
@@ -286,6 +290,9 @@ protected:
     bool EvaluateSplitMessSupportedMes();
     bool EvaluateLicenceRequiredMes     ( const CVector<uint8_t>& vecData );
     bool EvaluateVersionAndOSMes        ( const CVector<uint8_t>& vecData );
+    bool EvaluateBroadcastMixerStateMes (const CVector<uint8_t>& vecData);
+    bool EvaluateBroadcastMixerStateListMes(const CVector<uint8_t>& vecData);
+    bool EvaluateFollowBroadcastedMixerMes(const CVector<uint8_t>& vecData);
     bool EvaluateRecorderStateMes       ( const CVector<uint8_t>& vecData );
 
     bool EvaluateCLPingMes               ( const CHostAddress&     InetAddr,
@@ -360,6 +367,9 @@ signals:
     void SplitMessSupported();
     void LicenceRequired ( ELicenceType eLicenceType );
     void VersionAndOSReceived ( COSUtil::EOpSystemType eOSType, QString strVersion );
+    void BroadcastMixerStateReceived ( bool bIsBroadcastingMixer );
+    void MixerBroadcastersListReceived(CVector<int> vecBroadcasters);
+    void FollowBroadcastReceived ( bool bIsFollowing, int iChanIdToFollow );
     void RecorderStateReceived ( ERecorderState eRecorderState );
 
     void CLPingReceived               ( CHostAddress           InetAddr,

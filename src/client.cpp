@@ -63,6 +63,7 @@ CClient::CClient ( const quint16  iPortNumber,
     bEnableOPUS64                    ( false ),
     bJitterBufferOK                  ( true ),
     bNuteMeInPersonalMix             ( bNMuteMeInPersonalMix ),
+    bBroadcastMixer                  ( false ),
     iServerSockBufNumFrames          ( DEF_NET_BUF_SIZE_NUM_BL ),
     pSignalHandler                   ( CSignalHandler::getSingletonP() )
 {
@@ -624,6 +625,11 @@ void CClient::SetSndCrdRightOutputChannel ( const int iNewChan )
         // restart client
         Sound.Start();
     }
+}
+
+void CClient::SetBroadcastMixer(const bool eBroadcastMixer) {
+    bBroadcastMixer = eBroadcastMixer;
+    Channel.SetRemoteBroadcastMixerState(bBroadcastMixer);
 }
 
 void CClient::OnSndCrdReinitRequest ( int iSndCrdResetType )

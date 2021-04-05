@@ -28,7 +28,7 @@
 // CChannel implementation *****************************************************
 CChannel::CChannel ( const bool bNIsServer ) :
     vecfGains              ( MAX_NUM_CHANNELS, 1.0f ),
-    vecfPannings           ( MAX_NUM_CHANNELS, 0.5f ),
+    vecfPannings           ( MAX_NUM_CHANNELS, 0.5f ),    
     iCurSockBufNumFrames   ( INVALID_INDEX ),
     bDoAutoSockBufSize     ( true ),
     bUseSequenceNumber     ( false ), // this is important since in the client we reset on Channel.SetEnable ( false )
@@ -38,7 +38,10 @@ CChannel::CChannel ( const bool bNIsServer ) :
     bIsEnabled             ( false ),
     bIsServer              ( bNIsServer ),
     iAudioFrameSizeSamples ( DOUBLE_SYSTEM_FRAME_SIZE_SAMPLES ),
-    SignalLevelMeter       ( false, 0.5 ) // server mode with mono out and faster smoothing
+    SignalLevelMeter       ( false, 0.5 ), // server mode with mono out and faster smoothing    
+    bBroadcastMixer        ( false ),
+    bFollowMixer           ( false ),
+    iFollowMixerChannel    ( 0 )
 {
     // reset network transport properties
     ResetNetworkTransportProperties();
@@ -117,6 +120,15 @@ qRegisterMetaType<CHostAddress> ( "CHostAddress" );
 
     QObject::connect ( &Protocol, &CProtocol::VersionAndOSReceived,
         this, &CChannel::OnVersionAndOSReceived );
+
+    // QObject::connect ( &Protocol, &CProtocol::BroadcastMixerStateReceived,
+    //     this, &CChannel::OnBroadcastMixerStateReceived );
+
+    // QObject::connect ( &Protocol, &CProtocol::MixerBroadcastersListReceived,
+    //     this, &CChannel::OnMixerBroadcastersListReceived );
+
+    // QObject::connect ( &Protocol, &CProtocol::FollowBroadcastReceived,
+    //     this, &CChannel::OnFollowBroadcastReceived );
 
     QObject::connect ( &Protocol, &CProtocol::RecorderStateReceived,
         this, &CChannel::RecorderStateReceived );
@@ -368,6 +380,11 @@ void CChannel::SetChanInfo ( const CChannelCoreInfo& NChanInf )
         // fire message that the channel info has changed
         emit ChanInfoHasChanged();
     }
+}
+
+void CChannel::SetRemoteBroadcastMixerState (bool eBroadcastMixer) {
+    bBroadcastMixer = eBroadcastMixer;
+    Protocol.CreateBroadcastMixerStateMes( bBroadcastMixer);
 }
 
 QString CChannel::GetName()
