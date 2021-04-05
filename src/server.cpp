@@ -1478,12 +1478,16 @@ void CServer::CreateAndSendBroadcastersListForAllConChannels()
     // create broadcasters list
     CVector<int> vecBroadcastersList ( CreateBroadcastersList() );
 
+    qInfo() << "creating and sending broadcasters list";
+    qInfo() << vecBroadcastersList.Size();
+
     // now send connected channels list to all connected clients
     for ( int i = 0; i < iMaxNumChannels; i++ )
     {
         if ( vecChannels[i].IsConnected() )
         {
             // send message
+            qInfo() << "creating and sending broadcasters list message ";
             vecChannels[i].CreateMixerBroadcastersListMes ( vecBroadcastersList );
         }
     }

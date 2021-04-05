@@ -387,6 +387,11 @@ void CChannel::SetRemoteBroadcastMixerState (bool eBroadcastMixer) {
     Protocol.CreateBroadcastMixerStateMes( bBroadcastMixer);
 }
 
+void CChannel::CreateFollowMixerBroadcasterMes( bool bFollow, int iBroadcaster)
+{
+    Protocol.CreateFollowBroadcastedMixerMes( bFollow, iBroadcaster );
+}
+
 QString CChannel::GetName()
 {
     // make sure the string is not written at the same time when it is
@@ -562,6 +567,8 @@ void CChannel::OnFollowBroadcastReceived ( bool bIsFollowing, int iChanIdToFollo
         // might just be for the server to handle instead of here, not sure?
         Mutex.unlock();
         emit FollowBroadcastReceived(bIsFollowing, iChanIdToFollow);
+        qInfo() << qUtf8Printable( QString( "channel %1 following %2: %3" )
+            .arg(ChannelInfo.strName).arg( iChanIdToFollow ).arg( bIsFollowing ) );
     }
 }
 

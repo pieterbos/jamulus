@@ -149,6 +149,9 @@ CClient::CClient ( const quint16  iPortNumber,
     QObject::connect ( &Channel, &CChannel::VersionAndOSReceived,
         this, &CClient::VersionAndOSReceived );
 
+    QObject::connect ( &Channel, &CChannel::MixerBroadcastersListReceived,
+        this, &CClient::OnMixerBroadcastersListReceived );
+
     QObject::connect ( &Channel, &CChannel::RecorderStateReceived,
         this, &CClient::RecorderStateReceived );
 
@@ -771,6 +774,21 @@ void CClient::OnClientIDReceived ( int iChanID )
     }
 
     emit ClientIDReceived ( iChanID );
+}
+
+void CClient::OnMixerBroadcastersListReceived(CVector<int> vecBroadcasters)
+{
+    qInfo() << qUtf8Printable( QString( "received broadcasters list" ) );
+    qInfo() << vecBroadcasters.Size();
+
+    if (!Channel.IsBroadcastingMixer() && vecBroadcasters.Size() > 0 ) {
+        //TODO: replace with a UI Element OR store state so that it auto follows a broadcaster with a give name
+        //OR the broadcaster with the lowest channel number?
+        qInfo() << qUtf8Printable( QString( "following broadcast" ) );
+        Channel.CreateFollowMixerBroadcasterMes( true, vecBroadcasters[0] );
+    } else {
+        qInfo() << qUtf8Printable( QString( "not following broadcast" ) );
+    }
 }
 
 void CClient::Start()

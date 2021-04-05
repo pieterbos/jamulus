@@ -402,6 +402,7 @@ protected slots:
     void OnControllerInFaderIsSolo ( int iChannelIdx, bool bIsSolo );
     void OnControllerInFaderIsMute ( int iChannelIdx, bool bIsMute );
     void OnClientIDReceived ( int iChanID );
+    void OnMixerBroadcastersListReceived( CVector<int> vecBroadcasters );
 
 signals:
     void ConClientListMesReceived ( CVector<CChannelInfo> vecChanInfo );

@@ -143,6 +143,7 @@ public:
 
     void OnBroadcastMixerStateReceived( bool bIsBroadcastingMixer )
     {
+        //TODO: if ( !bIsBroadcastingMixer ) { RemoveAllFollowersForThisServerSlot(); }
         CreateAndSendBroadcastersListForAllConChannels();
     }
 
