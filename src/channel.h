@@ -289,6 +289,9 @@ public slots:
 
     void OnNewConnection() { emit NewConnection(); }
 
+    void OnBroadcastMixerStateReceived ( bool bIsBroadcastingMixer );    
+    void OnFollowBroadcastReceived ( bool bIsFollowing, int iChanIdToFollow );
+
 signals:
     void MessReadyForSending ( CVector<uint8_t> vecMessage );
     void NewConnection();
@@ -306,6 +309,9 @@ signals:
     void ReqNetTranspProps();
     void LicenceRequired ( ELicenceType eLicenceType );
     void VersionAndOSReceived ( COSUtil::EOpSystemType eOSType, QString strVersion );
+    void MixerBroadcastersListReceived(CVector<int> vecBroadcasters);
+    void FollowBroadcastReceived( bool bIsFollowing, int iChanIdToFollow );
+    void BroadcastMixerStateReceived (bool bIsBroadcasting);
     void RecorderStateReceived ( ERecorderState eRecorderState );
     void Disconnected();
 

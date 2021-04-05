@@ -121,14 +121,14 @@ qRegisterMetaType<CHostAddress> ( "CHostAddress" );
     QObject::connect ( &Protocol, &CProtocol::VersionAndOSReceived,
         this, &CChannel::OnVersionAndOSReceived );
 
-    // QObject::connect ( &Protocol, &CProtocol::BroadcastMixerStateReceived,
-    //     this, &CChannel::OnBroadcastMixerStateReceived );
+    QObject::connect ( &Protocol, &CProtocol::BroadcastMixerStateReceived,
+        this, &CChannel::OnBroadcastMixerStateReceived );
 
-    // QObject::connect ( &Protocol, &CProtocol::MixerBroadcastersListReceived,
-    //     this, &CChannel::OnMixerBroadcastersListReceived );
+    QObject::connect ( &Protocol, &CProtocol::MixerBroadcastersListReceived,
+        this, &CChannel::MixerBroadcastersListReceived );
 
-    // QObject::connect ( &Protocol, &CProtocol::FollowBroadcastReceived,
-    //     this, &CChannel::OnFollowBroadcastReceived );
+    QObject::connect ( &Protocol, &CProtocol::FollowBroadcastReceived,
+        this, &CChannel::OnFollowBroadcastReceived );
 
     QObject::connect ( &Protocol, &CProtocol::RecorderStateReceived,
         this, &CChannel::RecorderStateReceived );
@@ -533,6 +533,35 @@ void CChannel::OnNetTranspPropsReceived ( CNetworkTransportProps NetworkTranspor
             MutexConvBuf.unlock();
         }
         Mutex.unlock();
+    }
+}
+
+void CChannel::OnBroadcastMixerStateReceived ( bool eIsBroadcastingMixer ) {
+     // only the server shall act on mixer broadcast state received
+    if ( bIsServer ) {
+        Mutex.lock();
+        bBroadcastMixer = eIsBroadcastingMixer;
+
+
+        Mutex.unlock();
+        //TODO: emit event for server to process
+        // output regirstation result/update on the console
+        qInfo() << qUtf8Printable( QString( "mixer broadcasting state received: %1" )
+            .arg( eIsBroadcastingMixer ) );
+        emit BroadcastMixerStateReceived(eIsBroadcastingMixer);
+    }
+}
+
+void CChannel::OnFollowBroadcastReceived ( bool bIsFollowing, int iChanIdToFollow ) {
+    // only the server shall act on mixer broadcast state received
+    if ( bIsServer ) {
+        Mutex.lock();
+        //TODO: first implementing broadcasting, following later
+        // should store that the client is following a specific channel
+        // then send an event to the Server.
+        // might just be for the server to handle instead of here, not sure?
+        Mutex.unlock();
+        emit FollowBroadcastReceived(bIsFollowing, iChanIdToFollow);
     }
 }
 
