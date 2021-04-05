@@ -468,6 +468,12 @@ CClientDlg::CClientDlg ( CClient*         pNCliP,
     QObject::connect ( pClient, &CClient::MuteStateHasChangedReceived,
         this, &CClientDlg::OnMuteStateHasChangedReceived );
 
+    QObject::connect ( pClient, &CClient::ChangeBroadcastedChanGain,
+        this, &CClientDlg::OnChangeBroadcastedChanGain );
+
+    QObject::connect ( pClient, &CClient::ChangeBroadcastedChanPan,
+        this, &CClientDlg::OnChangeBroadcastedChanPan );
+
     QObject::connect ( pClient, &CClient::RecorderStateReceived,
         this, &CClientDlg::OnRecorderStateReceived );
 
@@ -1411,6 +1417,16 @@ rbtReverbSelR->setStyleSheet ( "" );
 
     // also apply GUI design to child GUI controls
     MainMixerBoard->SetGUIDesign ( eNewDesign );
+}
+
+void CClientDlg::OnChangeBroadcastedChanGain(int iChanID, float fGain)
+{
+    MainMixerBoard->SetFaderLevel(iChanID, ( int ) MathUtils::CalcFaderValue(fGain) );
+}
+
+void CClientDlg::OnChangeBroadcastedChanPan(int iChanID, float fPan)
+{
+    MainMixerBoard->SetPanValue(iChanID, ( int )  ( fPan * ( float ) AUD_MIX_PAN_MAX ) );
 }
 
 void CClientDlg::OnRecorderStateReceived (  const ERecorderState newRecorderState )

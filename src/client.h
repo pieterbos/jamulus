@@ -412,6 +412,9 @@ signals:
     void LicenceRequired ( ELicenceType eLicenceType );
     void VersionAndOSReceived ( COSUtil::EOpSystemType eOSType, QString strVersion );
     void PingTimeReceived ( int iPingTime );
+    void ChangeBroadcastedChanGain ( int iChanID, float fGain );
+    void ChangeBroadcastedChanPan ( int iChanID, float fPan );
+
     void RecorderStateReceived ( ERecorderState eRecorderState );
 
     void CLServerListReceived ( CHostAddress         InetAddr,

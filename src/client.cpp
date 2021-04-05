@@ -152,6 +152,12 @@ CClient::CClient ( const quint16  iPortNumber,
     QObject::connect ( &Channel, &CChannel::MixerBroadcastersListReceived,
         this, &CClient::OnMixerBroadcastersListReceived );
 
+    QObject::connect ( &Channel, &CChannel::ChangeBroadcastedChanGain,
+        this, &CClient::ChangeBroadcastedChanGain );
+
+    QObject::connect ( &Channel, &CChannel::ChangeBroadcastedChanPan,
+        this, &CClient::ChangeBroadcastedChanPan );
+
     QObject::connect ( &Channel, &CChannel::RecorderStateReceived,
         this, &CClient::RecorderStateReceived );
 

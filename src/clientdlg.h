@@ -246,6 +246,8 @@ public slots:
     void OnConnectDlgAccepted();
     void OnDisconnected() { Disconnect(); }
     void OnGUIDesignChanged();
+    void OnChangeBroadcastedChanGain( int iChanID, float fGain );
+    void OnChangeBroadcastedChanPan( int iChanID, float fPan );
     void OnRecorderStateReceived ( ERecorderState eRecorderState );
     void SetMixerBoardDeco(  const ERecorderState newRecorderState, const EGUIDesign eNewDesign  );
     void OnAudioChannelsChanged() { UpdateRevSelection(); }

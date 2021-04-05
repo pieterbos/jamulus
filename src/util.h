@@ -1286,6 +1286,19 @@ public:
                 AUD_MIX_FADER_RANGE_DB / 20.0f );
         }
     }
+
+    // calculate fader value in dB from linear gain
+    static float CalcFaderValue ( const float fValue )
+    {
+
+        // map range from 0..1 to range -35..0 dB and calculate linear gain
+        if ( fValue == 0 )
+        {
+            return 0; // -infinity
+        }
+
+        return ( ( AUD_MIX_FADER_RANGE_DB + (20.0f * log10 ( fValue ) ) ) / AUD_MIX_FADER_RANGE_DB ) *  AUD_MIX_FADER_MAX;
+    }
 };
 
 
