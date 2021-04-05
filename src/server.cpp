@@ -531,6 +531,12 @@ inline void CServer::connectChannelSignalsToServerSlots()
     void ( CServer::* pOnBroadcastMixerStateReceived )( bool ) =
         &CServerSlots<slotId>::OnBroadcastMixerStateReceived;
 
+    void ( CServer::* pOnBroadcastedChanGain )( int, float ) =
+        &CServerSlots<slotId>::OnChangeBroadcastedChanGain;
+
+    void ( CServer::* pOnBroadcastedChanPan )( int, float ) =
+        &CServerSlots<slotId>::OnChangeBroadcastedChanPan;
+
     // send message
     QObject::connect ( &vecChannels[iCurChanID], &CChannel::MessReadyForSending,
                        this, pOnSendProtMessCh );
@@ -558,6 +564,14 @@ inline void CServer::connectChannelSignalsToServerSlots()
     // mixer broadcasting state has changed
     QObject::connect ( &vecChannels[iCurChanID], &CChannel::BroadcastMixerStateReceived,
                        this, pOnBroadcastMixerStateReceived);
+
+    // a broadcasted mixers channel gain has changed
+    QObject::connect ( &vecChannels[iCurChanID], &CChannel::ChangeBroadcastedChanGain,
+                       this, pOnBroadcastedChanGain);
+
+    // a broadcasted mixers channel pan has changed
+    QObject::connect ( &vecChannels[iCurChanID], &CChannel::ChangeBroadcastedChanPan,
+                       this, pOnBroadcastedChanPan);
 
 
     connectChannelSignalsToServerSlots<slotId - 1>();
@@ -1513,6 +1527,47 @@ void CServer::CreateAndSendBroadcastersListForAllConChannels()
 //    {
 //        WriteHTMLChannelList();
 //    }
+}
+
+void CServer::CreateAndSendChanPanToAllFollowers ( const int  iBroadcasterChanID,
+                                                  const int  iOtherChanID,
+                                                  const float fPan )
+{
+
+    // now send connected channels list to all connected clients
+    for ( int i = 0; i < iMaxNumChannels; i++ )
+    {
+        if ( i != iBroadcasterChanID &&
+             vecChannels[i].IsConnected() &&
+             !vecChannels[i].IsBroadcastingMixer() && //not allowed for now to prevent infinite loops
+             vecChannels[i].IsFollowingMixer() &&
+             vecChannels[i].GetFollowingMixerChannel() == iBroadcasterChanID )
+        {
+            // send message
+            qInfo() << "sending pan message to follower...";
+            vecChannels[i].SetRemoteChanPan ( iOtherChanID, fPan );
+        }
+    }
+}
+
+void CServer::CreateAndSendChanGainToAllFollowers ( const int  iBroadcasterChanID,
+                                                  const int  iOtherChanID,
+                                                  const float fGain )
+{
+    // now send connected channels list to all connected clients
+    for ( int i = 0; i < iMaxNumChannels; i++ )
+    {
+        if ( i != iBroadcasterChanID &&
+             vecChannels[i].IsConnected() &&
+             !vecChannels[i].IsBroadcastingMixer() && //not allowed for now to prevent infinite loops
+             vecChannels[i].IsFollowingMixer() &&
+             vecChannels[i].GetFollowingMixerChannel() == iBroadcasterChanID )
+        {
+            // send message
+            qInfo() << "sending pan message to follower...";
+            vecChannels[i].SetRemoteChanGain( iOtherChanID, fGain );
+        }
+    }
 }
 
 void CServer::CreateAndSendChanListForThisChan ( const int iCurChanID )

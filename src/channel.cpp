@@ -330,6 +330,12 @@ void CChannel::SetGain ( const int   iChanID,
         {
             emit MuteStateHasChanged ( iChanID, true );
         }
+        if ( bBroadcastMixer ) {
+            // TODO: this single could just be ChangeChanGain, and always be emitted
+            // then the separate MuteStateHasChanged could be the same signal.
+            // decide on what is best
+            emit ChangeBroadcastedChanGain ( iChanID, fNewGain );
+        }
 
         vecfGains[iChanID] = fNewGain;
     }
@@ -358,6 +364,12 @@ void CChannel::SetPan ( const int   iChanID,
     // set value (make sure channel ID is in range)
     if ( ( iChanID >= 0 ) && ( iChanID < MAX_NUM_CHANNELS ) )
     {
+        if ( bBroadcastMixer ) {
+            // TODO: this single could just be ChangeChanGain, and always be emitted
+            // then the separate MuteStateHasChanged could be the same signal.
+            // decide on what is best
+            emit ChangeBroadcastedChanPan ( iChanID, fNewPan );
+        }
         vecfPannings[iChanID] = fNewPan;
     }
 }
@@ -468,17 +480,19 @@ void CChannel::OnJittBufSizeChange ( int iNewJitBufSize )
 void CChannel::OnChangeChanGain ( int   iChanID,
                                   float fNewGain )
 {
+    qInfo() << "received gain change";
     SetGain ( iChanID, fNewGain );
 }
 
 void CChannel::OnChangeChanPan ( int   iChanID,
                                  float fNewPan )
 {
+    qInfo() << "received pan change";
     SetPan ( iChanID, fNewPan );
 }
 
 void CChannel::OnChangeChanInfo ( CChannelCoreInfo ChanInfo )
-{
+{    
     SetChanInfo ( ChanInfo );
 }
 

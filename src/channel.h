@@ -318,6 +318,8 @@ signals:
     void MixerBroadcastersListReceived(CVector<int> vecBroadcasters);
     void FollowBroadcastReceived( bool bIsFollowing, int iChanIdToFollow );
     void BroadcastMixerStateReceived (bool bIsBroadcasting);
+    void ChangeBroadcastedChanGain ( int iChanID, float fNewGain );
+    void ChangeBroadcastedChanPan ( int iChanID, float fNewPan );
     void RecorderStateReceived ( ERecorderState eRecorderState );
     void Disconnected();
 
