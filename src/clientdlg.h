@@ -125,6 +125,9 @@ protected:
     CAnalyzerConsole   AnalyzerConsole;
     CMusProfDlg        MusicianProfileDlg;
 
+    QAction* pToggleBroadcastMenuItem;
+
+
 public slots:
     void OnConnectDisconBut();
     void OnTimerSigMet();
@@ -164,7 +167,7 @@ public slots:
 
     void OnLoadChannelSetup();
     void OnSaveChannelSetup();
-    void OnBroadcastChannelSetup();
+    void OnToggleBroadcast();
     void OnOpenConnectionSetupDialog() { ShowConnectionSetupDialog(); }
     void OnOpenMusicianProfileDialog() { ShowMusicianProfileDialog(); }
     void OnOpenGeneralSettings() { ShowGeneralSettings(); }

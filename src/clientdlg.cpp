@@ -254,8 +254,8 @@ CClientDlg::CClientDlg ( CClient*         pNCliP,
     pFileMenu->addAction ( tr ( "&Save Mixer Channels Setup..." ), this,
         SLOT ( OnSaveChannelSetup() ) );
 
-    pFileMenu->addAction ( tr ( "&Broadcast Mixer to others..." ), this,
-        SLOT ( OnBroadcastChannelSetup() ) );
+    pToggleBroadcastMenuItem = pFileMenu->addAction ( tr ( "&Broadcast Mixer to others..." ), this,
+        SLOT ( OnToggleBroadcast() ) );
 
     pFileMenu->addSeparator();
 
@@ -850,9 +850,18 @@ void CClientDlg::OnSaveChannelSetup()
     }
 }
 
-void CClientDlg::OnBroadcastChannelSetup()
+void CClientDlg::OnToggleBroadcast()
 {
-    pClient->SetBroadcastMixer(true); //TODO: toggle, or create second function/method/procedure/whatever the name is in C++
+    bool bIsBroadcasting = pClient->GetBroadcastMixer();
+    if ( bIsBroadcasting )
+    {
+        //TODO: translation!
+        pToggleBroadcastMenuItem->setText( tr ( "&Broadcast Mixer to others..." )) ;
+    } else
+    {
+        pToggleBroadcastMenuItem->setText( tr ( "&Stop broadcasting Mixer to others..." ) );
+    }
+    pClient->SetBroadcastMixer(!bIsBroadcasting); //TODO: toggle, or create second function/method/procedure/whatever the name is in C++
 }
 
 void CClientDlg::OnVersionAndOSReceived ( COSUtil::EOpSystemType ,

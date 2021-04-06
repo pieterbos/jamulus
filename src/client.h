@@ -130,6 +130,8 @@ public:
 
     bool   IsConnected() { return Channel.IsConnected(); }
 
+    bool   IsFollowingMixerBroadcast() { return Channel.IsFollowingMixer(); }
+
     EGUIDesign GetGUIDesign() const { return eGUIDesign; }
     void       SetGUIDesign ( const EGUIDesign eNGD ) { eGUIDesign = eNGD; }
 
