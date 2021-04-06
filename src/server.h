@@ -147,6 +147,12 @@ public:
         CreateAndSendBroadcastersListForAllConChannels();
     }
 
+    void OnFollowBroadcastReceived ( bool bFollowMixer, int iBroadcastingChanID) {
+        if ( bFollowMixer ) {
+            CreateAndSendChanPanGainToNewFollower ( slotId - 1, iBroadcastingChanID );
+        }
+    }
+
     void OnChangeBroadcastedChanPan ( int iChanId, float fPan) {
         CreateAndSendChanPanToAllFollowers ( slotId - 1, iChanId, fPan);
     }
@@ -173,13 +179,16 @@ protected:
 
     virtual void CreateAndSendBroadcastersListForAllConChannels() = 0;
 
+    virtual void CreateAndSendChanPanGainToNewFollower( const int  iFollowerChanID,
+                                                        const int  iBroadcasterChanID ) = 0;
+
     //TODO: check if this is required here, and why. Last touched C++ templates at least 15 years ago
-    virtual void CreateAndSendChanPanToAllFollowers ( const int  iBroadcasterChanID,
-                                                      const int  iOtherChanID,
+    virtual void CreateAndSendChanPanToAllFollowers ( const int   iBroadcasterChanID,
+                                                      const int   iOtherChanID,
                                                       const float fPan ) = 0;
 
     virtual void CreateAndSendChanGainToAllFollowers ( const int  iBroadcasterChanID,
-                                                      const int  iOtherChanID,
+                                                      const int   iOtherChanID,
                                                       const float fGain ) = 0;
 };
 
@@ -316,6 +325,8 @@ protected:
     virtual void CreateAndSendChanListForThisChan ( const int iCurChanID );
 
     virtual void CreateAndSendBroadcastersListForAllConChannels();
+    virtual void CreateAndSendChanPanGainToNewFollower ( const int iBroadcasterChanID,
+                                                         const int iFollowerChanID );
     virtual void CreateAndSendChanPanToAllFollowers ( const int  iBroadcasterChanID,
                                                       const int  iOtherChanID,
                                                       const float fPan );

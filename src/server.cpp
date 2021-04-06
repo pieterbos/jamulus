@@ -531,6 +531,11 @@ inline void CServer::connectChannelSignalsToServerSlots()
     void ( CServer::* pOnBroadcastMixerStateReceived )( bool ) =
         &CServerSlots<slotId>::OnBroadcastMixerStateReceived;
 
+    void ( CServer::* pOnFollowBroadcastReceived )( bool, int ) =
+        &CServerSlots<slotId>::OnFollowBroadcastReceived;
+
+
+
     void ( CServer::* pOnBroadcastedChanGain )( int, float ) =
         &CServerSlots<slotId>::OnChangeBroadcastedChanGain;
 
@@ -564,6 +569,10 @@ inline void CServer::connectChannelSignalsToServerSlots()
     // mixer broadcasting state has changed
     QObject::connect ( &vecChannels[iCurChanID], &CChannel::BroadcastMixerStateReceived,
                        this, pOnBroadcastMixerStateReceived);
+
+    // someone is now following or unfollowing a broadcaster
+    QObject::connect ( &vecChannels[iCurChanID], &CChannel::FollowBroadcastReceived,
+                       this, pOnFollowBroadcastReceived);
 
     // a broadcasted mixers channel gain has changed
     QObject::connect ( &vecChannels[iCurChanID], &CChannel::ChangeBroadcastedChanGain,
@@ -1536,6 +1545,36 @@ void CServer::CreateAndSendBroadcastersListForAllConChannels()
 //    {
 //        WriteHTMLChannelList();
 //    }
+}
+
+void CServer::CreateAndSendChanPanGainToNewFollower( const int  iFollowerChanID,
+                                                     const int  iBroadcasterChanID ) {
+    if ( iFollowerChanID >= 0 && iFollowerChanID < iMaxNumChannels  &&
+         iBroadcasterChanID >= 0 && iBroadcasterChanID < iMaxNumChannels ) {
+
+        CChannel* pFollower = &vecChannels[iFollowerChanID];
+        CChannel* pBroadcaster = &vecChannels[iBroadcasterChanID];
+
+        if ( pBroadcaster->IsConnected() &&
+             pFollower->IsConnected() &&
+             pBroadcaster->IsBroadcastingMixer() &&
+             pFollower->IsFollowingMixer() )
+        {
+
+
+            for ( int i = 0; i < iMaxNumChannels; i++ ) {
+                if ( vecChannels[i].IsEnabled())  //TODO: enabled, connected or both? what does this mean?
+                {
+                    float fGain = pBroadcaster->GetGain(i);
+                    float fPan = pBroadcaster->GetPan(i);
+
+                    pFollower->SetRemoteChanGain(i, fGain);
+                    pFollower->SetRemoteChanPan(i, fPan);
+                }
+            }
+
+        }
+    }
 }
 
 void CServer::CreateAndSendChanPanToAllFollowers ( const int  iBroadcasterChanID,
