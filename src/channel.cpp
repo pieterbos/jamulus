@@ -599,21 +599,19 @@ void CChannel::OnBroadcastMixerStateReceived ( bool eIsBroadcastingMixer ) {
 }
 
 void CChannel::OnFollowBroadcastReceived ( bool eIsFollowing, int eChanIdToFollow ) {
-    // only the server shall act on mixer broadcast state received
-    if ( bIsServer ) {
-        Mutex.lock();
-        //TODO: first implementing broadcasting, following later
-        // should store that the client is following a specific channel
-        // then send an event to the Server.
-        // might just be for the server to handle instead of here, not sure?
-        bFollowMixer = eIsFollowing;
-        iFollowMixerChannel = eChanIdToFollow;
+   // client can follow, server can indicate that the client is no longer following
+    Mutex.lock();
+    //TODO: first implementing broadcasting, following later
+    // should store that the client is following a specific channel
+    // then send an event to the Server.
+    // might just be for the server to handle instead of here, not sure?
+    bFollowMixer = eIsFollowing;
+    iFollowMixerChannel = eChanIdToFollow;
 
-        Mutex.unlock();
-        emit FollowBroadcastReceived(bFollowMixer, iFollowMixerChannel);
-        qInfo() << qUtf8Printable( QString( "channel %1 following %2: %3" )
-            .arg(ChannelInfo.strName).arg( iFollowMixerChannel ).arg( bFollowMixer ) );
-    }
+    Mutex.unlock();
+    emit FollowBroadcastReceived(bFollowMixer, iFollowMixerChannel);
+    qInfo() << qUtf8Printable( QString( "channel %1 following %2: %3" )
+        .arg(ChannelInfo.strName).arg( iFollowMixerChannel ).arg( bFollowMixer ) );
 }
 
 void CChannel::OnReqNetTranspProps()

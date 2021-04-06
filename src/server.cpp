@@ -657,7 +657,8 @@ void CServer::OnNewConnection ( int          iChID,
     // in case the client thinks he is still connected but the server
     // was restartet, it is important that we send the channel list
     // at this place.
-    vecChannels[iChID].CreateReqChanInfoMes();
+    vecChannels[iChID].CreateReqChanInfoMes();    
+
 
     // send welcome message (if enabled)
     MutexWelcomeMessage.lock();
@@ -685,6 +686,14 @@ void CServer::OnNewConnection ( int          iChID,
 
     // send recording state message on connection
     vecChannels[iChID].CreateRecorderStateMes ( JamController.GetRecorderState() );
+
+    // create broadcasters list
+    CVector<int> vecBroadcastersList ( CreateBroadcastersList() );
+    // send the broadcasters list to every new connection
+    vecChannels[iChID].CreateMixerBroadcastersListMes( vecBroadcastersList );
+    //TODO: request the mixer broadcast state, which will automatically trigger sending this to all clients if someting has changed, instaed of this
+    // otherwise a restart will lose sync on broadcast state
+    // may need a new REQ_MIXER_BROADCAST_STATE message?
 
     // reset the conversion buffers
     DoubleFrameSizeConvBufIn[iChID].Reset();
