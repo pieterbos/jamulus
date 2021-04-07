@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>425</width>
+    <width>647</width>
     <height>490</height>
    </rect>
   </property>
@@ -41,6 +41,9 @@
    </property>
    <item>
     <widget class="QFrame" name="backgroundFrame">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="minimumSize">
       <size>
        <width>0</width>
@@ -589,6 +592,9 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item>
+         <layout class="QGridLayout" name="followGrid"/>
         </item>
         <item>
          <widget class="CAudioMixerBoard" name="MainMixerBoard" native="true">

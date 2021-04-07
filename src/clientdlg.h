@@ -113,6 +113,7 @@ protected:
     QTimer             TimerStatus;
     QTimer             TimerPing;
     QTimer             TimerCheckAudioDeviceOk;
+    int                iFirstBroadcaster;
 
     virtual void       closeEvent     ( QCloseEvent*     Event );
     virtual void       dragEnterEvent ( QDragEnterEvent* Event ) { ManageDragNDrop ( Event, true ); }
@@ -124,6 +125,9 @@ protected:
     CConnectDlg        ConnectDlg;
     CAnalyzerConsole   AnalyzerConsole;
     CMusProfDlg        MusicianProfileDlg;
+
+    QAction* pToggleBroadcastMenuItem;
+
 
 public slots:
     void OnConnectDisconBut();
@@ -164,6 +168,7 @@ public slots:
 
     void OnLoadChannelSetup();
     void OnSaveChannelSetup();
+    void OnToggleBroadcast();
     void OnOpenConnectionSetupDialog() { ShowConnectionSetupDialog(); }
     void OnOpenMusicianProfileDialog() { ShowMusicianProfileDialog(); }
     void OnOpenGeneralSettings() { ShowGeneralSettings(); }
@@ -245,10 +250,16 @@ public slots:
     void OnConnectDlgAccepted();
     void OnDisconnected() { Disconnect(); }
     void OnGUIDesignChanged();
+    void OnChangeBroadcastedChanGain( int iChanID, float fGain );
+    void OnChangeBroadcastedChanPan( int iChanID, float fPan );
+    void OnMixerBroadcastersListReceived( CVector<int> broadcasters );
     void OnRecorderStateReceived ( ERecorderState eRecorderState );
     void SetMixerBoardDeco(  const ERecorderState newRecorderState, const EGUIDesign eNewDesign  );
     void OnAudioChannelsChanged() { UpdateRevSelection(); }
     void OnNumClientsChanged ( int iNewNumClients );
+
+    //TODO: properly introduce follow checkbox class that stores its channel number
+    void OnFollowStateChange ( int state );
 
     void accept() { close(); } // introduced by pljones
 };

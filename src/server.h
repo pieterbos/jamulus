@@ -141,6 +141,26 @@ public:
         CreateAndSendJitBufMessage ( slotId - 1, iNNumFra );
     }
 
+    void OnBroadcastMixerStateReceived ( bool bIsBroadcastingMixer )
+    {
+        //TODO: if ( !bIsBroadcastingMixer ) { RemoveAllFollowersForThisServerSlot(); }
+        CreateAndSendBroadcastersListForAllConChannels();
+    }
+
+    void OnFollowBroadcastReceived ( bool bFollowMixer, int iBroadcastingChanID) {
+        if ( bFollowMixer ) {
+            CreateAndSendChanPanGainToNewFollower ( slotId - 1, iBroadcastingChanID );
+        }
+    }
+
+    void OnChangeBroadcastedChanPan ( int iChanId, float fPan) {
+        CreateAndSendChanPanToAllFollowers ( slotId - 1, iChanId, fPan);
+    }
+
+    void OnChangeBroadcastedChanGain ( int iChanId, float fGain) {
+        CreateAndSendChanGainToAllFollowers ( slotId - 1, iChanId, fGain);
+    }
+
 protected:
     virtual void SendProtMessage ( int              iChID,
                                    CVector<uint8_t> vecMessage ) = 0;
@@ -156,6 +176,20 @@ protected:
 
     virtual void CreateAndSendJitBufMessage ( const int iCurChanID,
                                               const int iNNumFra ) = 0;
+
+    virtual void CreateAndSendBroadcastersListForAllConChannels() = 0;
+
+    virtual void CreateAndSendChanPanGainToNewFollower( const int  iFollowerChanID,
+                                                        const int  iBroadcasterChanID ) = 0;
+
+    //TODO: check if this is required here, and why. Last touched C++ templates at least 15 years ago
+    virtual void CreateAndSendChanPanToAllFollowers ( const int   iBroadcasterChanID,
+                                                      const int   iOtherChanID,
+                                                      const float fPan ) = 0;
+
+    virtual void CreateAndSendChanGainToAllFollowers ( const int  iBroadcasterChanID,
+                                                      const int   iOtherChanID,
+                                                      const float fGain ) = 0;
 };
 
 template<>
@@ -285,10 +319,21 @@ protected:
     int FindChannel ( const CHostAddress& CheckAddr );
     int GetNumberOfConnectedClients();
     CVector<CChannelInfo> CreateChannelList();
+    CVector<int> CreateBroadcastersList();
 
     virtual void CreateAndSendChanListForAllConChannels();
     virtual void CreateAndSendChanListForThisChan ( const int iCurChanID );
 
+    virtual void CreateAndSendBroadcastersListForAllConChannels();
+    virtual void CreateAndSendChanPanGainToNewFollower ( const int iBroadcasterChanID,
+                                                         const int iFollowerChanID );
+    virtual void CreateAndSendChanPanToAllFollowers ( const int  iBroadcasterChanID,
+                                                      const int  iOtherChanID,
+                                                      const float fPan );
+
+    virtual void CreateAndSendChanGainToAllFollowers ( const int  iBroadcasterChanID,
+                                                      const int  iOtherChanID,
+                                                      const float fGain );
     virtual void CreateAndSendChatTextForAllConChannels ( const int      iCurChanID,
                                                           const QString& strChatText );
 
@@ -376,6 +421,9 @@ protected:
 
     // Channel levels
     CVector<uint16_t>          vecChannelLevels;
+
+    // mixer broadcast following
+    CVector<int>               vecMixerFollowers;
 
     // actual working objects
     CHighPrioSocket            Socket;

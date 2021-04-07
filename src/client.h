@@ -130,6 +130,15 @@ public:
 
     bool   IsConnected() { return Channel.IsConnected(); }
 
+    bool   IsFollowingMixerBroadcast() { return Channel.IsFollowingMixer(); }
+
+    int GetFollowingMixerChannel() { return Channel.GetFollowingMixerChannel(); }
+
+    bool IsBroadcastingMixer() { return Channel.IsBroadcastingMixer(); }
+    void FollowBroadcastingMixer ( bool bFollow, int iChanID ) {
+        Channel.CreateFollowMixerBroadcasterMes( bFollow, iChanID );
+    }
+
     EGUIDesign GetGUIDesign() const { return eGUIDesign; }
     void       SetGUIDesign ( const EGUIDesign eNGD ) { eGUIDesign = eNGD; }
 
@@ -141,6 +150,9 @@ public:
 
     int  GetAudioInFader() const { return iAudioInFader; }
     void SetAudioInFader ( const int iNV ) { iAudioInFader = iNV; }
+
+    bool GetBroadcastMixer() const { return bBroadcastMixer; }
+    void SetBroadcastMixer(const bool eBroadcastMixer);
 
     int  GetReverbLevel() const { return iReverbLevel; }
     void SetReverbLevel ( const int iNL ) { iReverbLevel = iNL; }
@@ -359,6 +371,7 @@ protected:
     bool                    bJitterBufferOK;
     bool                    bNuteMeInPersonalMix;
     QMutex                  MutexDriverReinit;
+    bool                    bBroadcastMixer;
 
     // server settings
     int                     iServerSockBufNumFrames;
@@ -398,6 +411,7 @@ protected slots:
     void OnControllerInFaderIsSolo ( int iChannelIdx, bool bIsSolo );
     void OnControllerInFaderIsMute ( int iChannelIdx, bool bIsMute );
     void OnClientIDReceived ( int iChanID );
+    void OnMixerBroadcastersListReceived( CVector<int> vecBroadcasters );
 
 signals:
     void ConClientListMesReceived ( CVector<CChannelInfo> vecChanInfo );
@@ -407,6 +421,9 @@ signals:
     void LicenceRequired ( ELicenceType eLicenceType );
     void VersionAndOSReceived ( COSUtil::EOpSystemType eOSType, QString strVersion );
     void PingTimeReceived ( int iPingTime );
+    void ChangeBroadcastedChanGain ( int iChanID, float fGain );
+    void ChangeBroadcastedChanPan ( int iChanID, float fPan );
+
     void RecorderStateReceived ( ERecorderState eRecorderState );
 
     void CLServerListReceived ( CHostAddress         InetAddr,
@@ -435,4 +452,5 @@ signals:
     void ControllerInPanValue ( int iChannelIdx, int iValue );
     void ControllerInFaderIsSolo ( int iChannelIdx, bool bIsSolo );
     void ControllerInFaderIsMute ( int iChannelIdx, bool bIsMute );
+    void MixerBroadcastersListReceived ( CVector<int> vecBroadcasters );
 };

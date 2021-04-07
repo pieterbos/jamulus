@@ -94,6 +94,10 @@ public:
     void SetEnable ( const bool bNEnStat );
     bool IsEnabled() { return bIsEnabled; }
 
+    bool IsBroadcastingMixer();
+    bool IsFollowingMixer();
+    int GetFollowingMixerChannel();
+
     void SetAddress ( const CHostAddress NAddr ) { InetAddr = NAddr; }
     bool GetAddress ( CHostAddress& RetAddr );
     const CHostAddress& GetAddress() const { return InetAddr; }
@@ -106,9 +110,13 @@ public:
     void SetRemoteInfo ( const CChannelCoreInfo ChInfo )
         { Protocol.CreateChanInfoMes ( ChInfo ); }
 
+    void SetRemoteBroadcastMixerState (bool bBroadcastMixer);
+
     void CreateReqChanInfoMes() { Protocol.CreateReqChanInfoMes(); }
     void CreateVersionAndOSMes() { Protocol.CreateVersionAndOSMes(); }
     void CreateMuteStateHasChangedMes ( const int iChanID, const bool bIsMuted ) { Protocol.CreateMuteStateHasChangedMes ( iChanID, bIsMuted ); }
+    void CreateMixerBroadcastersListMes(CVector<int> broadcasters) { Protocol.CreateBroadcastMixerStateListMes( broadcasters ); }
+    void CreateFollowMixerBroadcasterMes( bool bFollow, int iBroadcaster );
 
     void SetGain ( const int iChanID, const float fNewGain );
     float GetGain ( const int iChanID );
@@ -221,6 +229,11 @@ protected:
     // network protocol
     CProtocol               Protocol;
 
+    //mixer state broadcasting
+    bool                    bBroadcastMixer;
+    bool                    bFollowMixer;
+    int                     iFollowMixerChannel;
+
     int                     iConTimeOut;
     int                     iConTimeOutStartVal;
     int                     iFadeInCnt;
@@ -282,6 +295,9 @@ public slots:
 
     void OnNewConnection() { emit NewConnection(); }
 
+    void OnBroadcastMixerStateReceived ( bool bIsBroadcastingMixer );    
+    void OnFollowBroadcastReceived ( bool bIsFollowing, int iChanIdToFollow );
+
 signals:
     void MessReadyForSending ( CVector<uint8_t> vecMessage );
     void NewConnection();
@@ -299,6 +315,11 @@ signals:
     void ReqNetTranspProps();
     void LicenceRequired ( ELicenceType eLicenceType );
     void VersionAndOSReceived ( COSUtil::EOpSystemType eOSType, QString strVersion );
+    void MixerBroadcastersListReceived(CVector<int> vecBroadcasters);
+    void FollowBroadcastReceived( bool bIsFollowing, int iChanIdToFollow );
+    void BroadcastMixerStateReceived (bool bIsBroadcasting);
+    void ChangeBroadcastedChanGain ( int iChanID, float fNewGain );
+    void ChangeBroadcastedChanPan ( int iChanID, float fNewPan );
     void RecorderStateReceived ( ERecorderState eRecorderState );
     void Disconnected();
 

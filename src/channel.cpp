@@ -28,7 +28,7 @@
 // CChannel implementation *****************************************************
 CChannel::CChannel ( const bool bNIsServer ) :
     vecfGains              ( MAX_NUM_CHANNELS, 1.0f ),
-    vecfPannings           ( MAX_NUM_CHANNELS, 0.5f ),
+    vecfPannings           ( MAX_NUM_CHANNELS, 0.5f ),    
     iCurSockBufNumFrames   ( INVALID_INDEX ),
     bDoAutoSockBufSize     ( true ),
     bUseSequenceNumber     ( false ), // this is important since in the client we reset on Channel.SetEnable ( false )
@@ -38,7 +38,10 @@ CChannel::CChannel ( const bool bNIsServer ) :
     bIsEnabled             ( false ),
     bIsServer              ( bNIsServer ),
     iAudioFrameSizeSamples ( DOUBLE_SYSTEM_FRAME_SIZE_SAMPLES ),
-    SignalLevelMeter       ( false, 0.5 ) // server mode with mono out and faster smoothing
+    SignalLevelMeter       ( false, 0.5 ), // server mode with mono out and faster smoothing    
+    bBroadcastMixer        ( false ),
+    bFollowMixer           ( false ),
+    iFollowMixerChannel    ( 0 )
 {
     // reset network transport properties
     ResetNetworkTransportProperties();
@@ -118,6 +121,15 @@ qRegisterMetaType<CHostAddress> ( "CHostAddress" );
     QObject::connect ( &Protocol, &CProtocol::VersionAndOSReceived,
         this, &CChannel::OnVersionAndOSReceived );
 
+    QObject::connect ( &Protocol, &CProtocol::BroadcastMixerStateReceived,
+        this, &CChannel::OnBroadcastMixerStateReceived );
+
+    QObject::connect ( &Protocol, &CProtocol::MixerBroadcastersListReceived,
+        this, &CChannel::MixerBroadcastersListReceived );
+
+    QObject::connect ( &Protocol, &CProtocol::FollowBroadcastReceived,
+        this, &CChannel::OnFollowBroadcastReceived );
+
     QObject::connect ( &Protocol, &CProtocol::RecorderStateReceived,
         this, &CChannel::RecorderStateReceived );
 }
@@ -160,6 +172,13 @@ void CChannel::SetEnable ( const bool bNEnStat )
         iConTimeOut = 0;
         Protocol.Reset();
     }
+}
+
+bool CChannel::IsBroadcastingMixer()
+{
+    QMutexLocker locker ( &Mutex );
+
+    return bBroadcastMixer;
 }
 
 void CChannel::OnVersionAndOSReceived ( COSUtil::EOpSystemType eOSType,
@@ -311,6 +330,13 @@ void CChannel::SetGain ( const int   iChanID,
         {
             emit MuteStateHasChanged ( iChanID, true );
         }
+        if ( ( bIsServer && bBroadcastMixer) ||
+             ( !bIsServer && bFollowMixer ) ) {
+            // TODO: this single could just be ChangeChanGain, and always be emitted
+            // then the separate MuteStateHasChanged could be the same signal.
+            // decide on what is best
+            emit ChangeBroadcastedChanGain ( iChanID, fNewGain );
+        }
 
         vecfGains[iChanID] = fNewGain;
     }
@@ -339,6 +365,15 @@ void CChannel::SetPan ( const int   iChanID,
     // set value (make sure channel ID is in range)
     if ( ( iChanID >= 0 ) && ( iChanID < MAX_NUM_CHANNELS ) )
     {
+        if ( ( bIsServer && bBroadcastMixer) ||
+             ( !bIsServer && bFollowMixer ) ) {
+            // TODO: this single could just be ChangeChanGain, and always be emitted
+            // then the separate MuteStateHasChanged could be the same signal.
+            // decide on what is best
+            // OTOH, check if possibly this could lead to endless loops.
+            emit ChangeBroadcastedChanPan ( iChanID, fNewPan );
+        }
+
         vecfPannings[iChanID] = fNewPan;
     }
 }
@@ -368,6 +403,34 @@ void CChannel::SetChanInfo ( const CChannelCoreInfo& NChanInf )
         // fire message that the channel info has changed
         emit ChanInfoHasChanged();
     }
+}
+
+void CChannel::SetRemoteBroadcastMixerState (bool eBroadcastMixer) {
+
+    QMutexLocker locker ( &Mutex );
+
+    bBroadcastMixer = eBroadcastMixer;
+
+    Protocol.CreateBroadcastMixerStateMes( bBroadcastMixer);
+}
+
+void CChannel::CreateFollowMixerBroadcasterMes( bool eFollow, int eBroadcaster)
+{
+    QMutexLocker locker ( &Mutex );
+
+    bFollowMixer = eFollow;
+    iFollowMixerChannel = eBroadcaster;
+    Protocol.CreateFollowBroadcastedMixerMes( eFollow, eBroadcaster );
+}
+
+bool CChannel::IsFollowingMixer() {
+    QMutexLocker locker ( &Mutex );
+
+    return bFollowMixer;
+}
+
+int CChannel::GetFollowingMixerChannel() {
+    return iFollowMixerChannel;
 }
 
 QString CChannel::GetName()
@@ -427,11 +490,11 @@ void CChannel::OnChangeChanGain ( int   iChanID,
 void CChannel::OnChangeChanPan ( int   iChanID,
                                  float fNewPan )
 {
-    SetPan ( iChanID, fNewPan );
+    SetPan ( iChanID, fNewPan );    
 }
 
 void CChannel::OnChangeChanInfo ( CChannelCoreInfo ChanInfo )
-{
+{    
     SetChanInfo ( ChanInfo );
 }
 
@@ -517,6 +580,38 @@ void CChannel::OnNetTranspPropsReceived ( CNetworkTransportProps NetworkTranspor
         }
         Mutex.unlock();
     }
+}
+
+void CChannel::OnBroadcastMixerStateReceived ( bool eIsBroadcastingMixer ) {
+     // only the server shall act on mixer broadcast state received
+    if ( bIsServer ) {
+        Mutex.lock();
+        bBroadcastMixer = eIsBroadcastingMixer;
+
+
+        Mutex.unlock();
+        //TODO: emit event for server to process
+        // output regirstation result/update on the console
+        qInfo() << qUtf8Printable( QString( "mixer broadcasting state received: %1" )
+            .arg( eIsBroadcastingMixer ) );
+        emit BroadcastMixerStateReceived(eIsBroadcastingMixer);
+    }
+}
+
+void CChannel::OnFollowBroadcastReceived ( bool eIsFollowing, int eChanIdToFollow ) {
+   // client can follow, server can indicate that the client is no longer following
+    Mutex.lock();
+    //TODO: first implementing broadcasting, following later
+    // should store that the client is following a specific channel
+    // then send an event to the Server.
+    // might just be for the server to handle instead of here, not sure?
+    bFollowMixer = eIsFollowing;
+    iFollowMixerChannel = eChanIdToFollow;
+
+    Mutex.unlock();
+    emit FollowBroadcastReceived(bFollowMixer, iFollowMixerChannel);
+    qInfo() << qUtf8Printable( QString( "channel %1 following %2: %3" )
+        .arg(ChannelInfo.strName).arg( iFollowMixerChannel ).arg( bFollowMixer ) );
 }
 
 void CChannel::OnReqNetTranspProps()

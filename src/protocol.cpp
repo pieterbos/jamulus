@@ -228,6 +228,24 @@ MESSAGES (with connection)
     | 1 byte operating system | 2 bytes number n | n bytes UTF-8 string version |
     +-------------------------+------------------+------------------------------+
 
+- PROTMESSID_BROADCAST_MIXER_STATE: Set the mixer state for a single channel
+
+    +-------------------+-----------------------------------+
+    | 1 byte channel ID | 1 byte broadcast enabled/disabled |
+    +-------------------+-----------------------------------+
+
+- PROTMESSID_BROADCAST_MIXER_STATE_LIST: A list of channels that are broadcasting their mix
+
+    for each channel that is broadcasting, will contain a 1 byte channel id
+    if nobody is broadcasting, contains no data, n = 0
+
+- PROTMESSID_FOLLOW_BROADCASTED_MIXER: Indicate which mixer to follow, or to unfollow
+
+    +-------------------+--------------------------------------------------------------+
+    | 1 byte channel ID | 1 byte client wants to follow | 1 byte channel id to follow  |
+    +-------------------+--------------------------------------------------------------+
+
+
 
 // #### COMPATIBILITY OLD VERSION, TO BE REMOVED ####
 - PROTMESSID_OPUS_SUPPORTED: Informs that OPUS codec is supported
@@ -843,10 +861,20 @@ if ( rand() < ( RAND_MAX / 2 ) ) return false;
                 case PROTMESSID_VERSION_AND_OS:
                     EvaluateVersionAndOSMes ( vecbyMesBodyDataRef );
                     break;
+                case PROTMESSID_BROADCAST_MIXER_STATE:
+                    EvaluateBroadcastMixerStateMes(vecbyMesBodyDataRef);
+                    break;
+                case PROTMESSID_BROADCAST_MIXER_STATE_LIST:
+                    EvaluateBroadcastMixerStateListMes(vecbyMesBodyDataRef);
+                    break;
+                case PROTMESSID_FOLLOW_BROADCASTED_MIXER: 
+                    EvaluateFollowBroadcastedMixerMes(vecbyMesBodyDataRef);
+                    break;
 
                 case PROTMESSID_RECORDER_STATE:
                     EvaluateRecorderStateMes ( vecbyMesBodyDataRef );
                     break;
+                    
                 }
             }
 
@@ -1726,6 +1754,90 @@ bool CProtocol::EvaluateVersionAndOSMes ( const CVector<uint8_t>& vecData )
 
     // invoke message action
     emit VersionAndOSReceived ( eOSType, strVersion );
+
+    return false; // no error
+}
+
+void CProtocol::CreateBroadcastMixerStateMes(const bool bIsBroadcastingMixer) {
+    CVector<uint8_t> vecData ( 1 ); // 1 byte of data
+    int              iPos = 0;      // init position pointer
+    PutValOnStream ( vecData, iPos, static_cast<uint32_t> ( bIsBroadcastingMixer ), 1 );
+    CreateAndSendMessage ( PROTMESSID_BROADCAST_MIXER_STATE, vecData );
+}
+       
+bool CProtocol::EvaluateBroadcastMixerStateMes (const CVector<uint8_t>& vecData) {
+    int iPos = 0; // init position pointer
+
+    // check size
+    if ( vecData.Size() != 1 )
+    {
+        return true; // return error code
+    }
+
+    const int bIsBroadcastingMixer =
+        static_cast<bool> ( GetValFromStream ( vecData, iPos, 1 ) );
+
+    // invoke message action
+    emit BroadcastMixerStateReceived ( bIsBroadcastingMixer);
+
+    return false; // no error
+}
+
+void CProtocol::CreateBroadcastMixerStateListMes(const CVector<int> broadcasters) {
+    CVector<uint8_t> vecData ( broadcasters.Size() );
+    int              iPos = 0;      // init position pointer
+    for ( int i = 0; i < broadcasters.Size(); i++ ) {
+        PutValOnStream ( vecData, iPos, static_cast<uint32_t> ( broadcasters[i] ), 1 );
+    }
+    CreateAndSendMessage ( PROTMESSID_BROADCAST_MIXER_STATE_LIST, vecData );
+}
+
+bool CProtocol::EvaluateBroadcastMixerStateListMes(const CVector<uint8_t>& vecData) {
+    CVector<int> broadcasters (vecData.Size());
+    int iPos = 0; // init position pointer
+
+
+    for ( int i = 0; i < broadcasters.Size(); i++ ) {
+        broadcasters[i] = static_cast<int> ( GetValFromStream ( vecData, iPos, 1 ) );
+    }            
+
+    // invoke message action
+    emit MixerBroadcastersListReceived (broadcasters);
+
+    return false; // no error
+}
+
+void CProtocol::CreateFollowBroadcastedMixerMes(const bool bIsFollowing, const int iChanIdToFollow) {
+    CVector<uint8_t> vecData ( 2 ); // 1 byte of data
+    int              iPos = 0;      // init position pointer
+    // build data vector
+    //whether to follow or not
+    PutValOnStream ( vecData, iPos, static_cast<uint32_t> ( bIsFollowing ), 1 );
+    //channel id to follow
+    PutValOnStream ( vecData, iPos, static_cast<uint32_t> ( iChanIdToFollow ), 1 );
+    CreateAndSendMessage ( PROTMESSID_FOLLOW_BROADCASTED_MIXER, vecData );
+
+}
+
+bool CProtocol::EvaluateFollowBroadcastedMixerMes(const CVector<uint8_t>& vecData) {
+    int iPos = 0; // init position pointer
+
+    // check size
+    if ( vecData.Size() != 2 )
+    {
+        return true; // return error code
+    }
+
+    // channel id, 1 byte
+    const int bIsFollowing =
+        static_cast<bool> ( GetValFromStream ( vecData, iPos, 1 ) );
+    const int iChanIdToFollow =
+        static_cast<int> ( GetValFromStream ( vecData, iPos, 1 ) );
+
+    
+
+    // invoke message action
+    emit FollowBroadcastReceived ( bIsFollowing, iChanIdToFollow );
 
     return false; // no error
 }

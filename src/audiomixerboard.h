@@ -205,6 +205,7 @@ public:
     void            SetPanIsSupported();
     void            SetRemoteFaderIsMute ( const int iChannelIdx, const bool bIsMute );
     void            SetMyChannelID ( const int iChannelIdx ) { iMyChannelID = iChannelIdx; }
+    int             GetMyChannelID () { return iMyChannelID; }
 
     void            SetFaderLevel ( const int iChannelIdx,
                                     const int iValue );

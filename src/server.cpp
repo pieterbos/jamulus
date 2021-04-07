@@ -375,6 +375,9 @@ CServer::CServer ( const int          iNewMaxNumChan,
     // allocate worst case memory for the channel levels
     vecChannelLevels.Init ( iMaxNumChannels );
 
+    // allocate worst case memory for the mixer broadcast followers
+    vecMixerFollowers.Init ( iMaxNumChannels );
+
     // enable logging (if requested)
     if ( !strLoggingFileName.isEmpty() )
     {
@@ -525,6 +528,20 @@ inline void CServer::connectChannelSignalsToServerSlots()
     void ( CServer::* pOnServerAutoSockBufSizeChangeCh )( int ) =
         &CServerSlots<slotId>::OnServerAutoSockBufSizeChangeCh;
 
+    void ( CServer::* pOnBroadcastMixerStateReceived )( bool ) =
+        &CServerSlots<slotId>::OnBroadcastMixerStateReceived;
+
+    void ( CServer::* pOnFollowBroadcastReceived )( bool, int ) =
+        &CServerSlots<slotId>::OnFollowBroadcastReceived;
+
+
+
+    void ( CServer::* pOnBroadcastedChanGain )( int, float ) =
+        &CServerSlots<slotId>::OnChangeBroadcastedChanGain;
+
+    void ( CServer::* pOnBroadcastedChanPan )( int, float ) =
+        &CServerSlots<slotId>::OnChangeBroadcastedChanPan;
+
     // send message
     QObject::connect ( &vecChannels[iCurChanID], &CChannel::MessReadyForSending,
                        this, pOnSendProtMessCh );
@@ -548,6 +565,23 @@ inline void CServer::connectChannelSignalsToServerSlots()
     // auto socket buffer size change
     QObject::connect ( &vecChannels[iCurChanID], &CChannel::ServerAutoSockBufSizeChange,
                        this, pOnServerAutoSockBufSizeChangeCh );
+
+    // mixer broadcasting state has changed
+    QObject::connect ( &vecChannels[iCurChanID], &CChannel::BroadcastMixerStateReceived,
+                       this, pOnBroadcastMixerStateReceived);
+
+    // someone is now following or unfollowing a broadcaster
+    QObject::connect ( &vecChannels[iCurChanID], &CChannel::FollowBroadcastReceived,
+                       this, pOnFollowBroadcastReceived);
+
+    // a broadcasted mixers channel gain has changed
+    QObject::connect ( &vecChannels[iCurChanID], &CChannel::ChangeBroadcastedChanGain,
+                       this, pOnBroadcastedChanGain);
+
+    // a broadcasted mixers channel pan has changed
+    QObject::connect ( &vecChannels[iCurChanID], &CChannel::ChangeBroadcastedChanPan,
+                       this, pOnBroadcastedChanPan);
+
 
     connectChannelSignalsToServerSlots<slotId - 1>();
 }
@@ -632,7 +666,8 @@ void CServer::OnNewConnection ( int          iChID,
     // in case the client thinks he is still connected but the server
     // was restartet, it is important that we send the channel list
     // at this place.
-    vecChannels[iChID].CreateReqChanInfoMes();
+    vecChannels[iChID].CreateReqChanInfoMes();    
+
 
     // send welcome message (if enabled)
     MutexWelcomeMessage.lock();
@@ -660,6 +695,14 @@ void CServer::OnNewConnection ( int          iChID,
 
     // send recording state message on connection
     vecChannels[iChID].CreateRecorderStateMes ( JamController.GetRecorderState() );
+
+    // create broadcasters list
+    CVector<int> vecBroadcastersList ( CreateBroadcastersList() );
+    // send the broadcasters list to every new connection
+    vecChannels[iChID].CreateMixerBroadcastersListMes( vecBroadcastersList );
+    //TODO: request the mixer broadcast state, which will automatically trigger sending this to all clients if someting has changed, instaed of this
+    // otherwise a restart will lose sync on broadcast state
+    // may need a new REQ_MIXER_BROADCAST_STATE message?
 
     // reset the conversion buffers
     DoubleFrameSizeConvBufIn[iChID].Reset();
@@ -815,6 +858,16 @@ static CTimingMeas JitterMeas ( 1000, "test2.dat" ); JitterMeas.Measure(); // TE
                 iNumClients++;
             }
         }
+
+        // get mixer followers of all connected channels
+
+        for ( int iChanCnt = 0; iChanCnt < iNumClients; iChanCnt++ )
+        {
+           const int iCurChanID = vecChanIDsCurConChan[iChanCnt];
+           //TODO: should there be another list of booleans instead of saving the current channel id to indicate someone is following its own mixer instead of someone elses?
+           vecMixerFollowers[iCurChanID] = vecChannels[iCurChanID].IsFollowingMixer() ? vecChannels[iCurChanID].GetFollowingMixerChannel() : iCurChanID;
+        }
+
 
         // prepare and decode connected channels
         if ( !bUseMultithreading )
@@ -989,6 +1042,8 @@ void CServer::DecodeReceiveData ( const int iChanCnt,
     // get actual ID of current channel
     const int iCurChanID = vecChanIDsCurConChan[iChanCnt];
 
+    const int iGainChannelId = vecMixerFollowers[iCurChanID];
+
     // get and store number of audio channels and compression type
     vecNumAudioChannels[iChanCnt] = vecChannels[iCurChanID].GetNumAudioChannels();
     vecAudioComprType[iChanCnt]   = vecChannels[iCurChanID].GetAudioCompressionType();
@@ -1042,7 +1097,8 @@ void CServer::DecodeReceiveData ( const int iChanCnt,
     else
     {
         CurOpusDecoder = nullptr;
-    }
+    }    
+
 
     // get gains of all connected channels
     for ( int j = 0; j < iNumClients; j++ )
@@ -1051,7 +1107,7 @@ void CServer::DecodeReceiveData ( const int iChanCnt,
         // the channel ID! Therefore we have to use
         // "vecChanIDsCurConChan" to query the IDs of the currently
         // connected channels
-        vecvecfGains[iChanCnt][j] = vecChannels[iCurChanID].GetGain ( vecChanIDsCurConChan[j] );
+        vecvecfGains[iChanCnt][j] = vecChannels[iGainChannelId].GetGain ( vecChanIDsCurConChan[j] );
 
         // consider audio fade-in
         vecvecfGains[iChanCnt][j] *= vecChannels[vecChanIDsCurConChan[j]].GetFadeInGain();
@@ -1060,11 +1116,11 @@ void CServer::DecodeReceiveData ( const int iChanCnt,
         // as well to avoid the client volumes are at 100% when joining a server (#628)
         if ( j != iChanCnt )
         {
-            vecvecfGains[iChanCnt][j] *= vecChannels[iCurChanID].GetFadeInGain();
+            vecvecfGains[iChanCnt][j] *= vecChannels[iGainChannelId].GetFadeInGain();
         }
 
         // panning
-        vecvecfPannings[iChanCnt][j] = vecChannels[iCurChanID].GetPan ( vecChanIDsCurConChan[j] );
+        vecvecfPannings[iChanCnt][j] = vecChannels[iGainChannelId].GetPan ( vecChanIDsCurConChan[j] );
     }
 
     // If the server frame size is smaller than the received OPUS frame size, we need a conversion
@@ -1445,6 +1501,120 @@ void CServer::CreateAndSendChanListForAllConChannels()
     if ( bWriteStatusHTMLFile )
     {
         WriteHTMLChannelList();
+    }
+}
+
+CVector<int> CServer::CreateBroadcastersList()
+{
+    CVector<int> vecBroadcasters ( 0 );
+
+    // look for free channels
+    for ( int i = 0; i < iMaxNumChannels; i++ )
+    {
+        if ( vecChannels[i].IsConnected() && vecChannels[i].IsBroadcastingMixer())
+        {
+            // append channel ID, IP address and channel name to storing vectors
+            vecBroadcasters.Add ( i );
+        }
+    }
+
+    return vecBroadcasters;
+}
+
+void CServer::CreateAndSendBroadcastersListForAllConChannels()
+{
+    // create broadcasters list
+    CVector<int> vecBroadcastersList ( CreateBroadcastersList() );
+
+    qInfo() << "creating and sending broadcasters list";
+    qInfo() << vecBroadcastersList.Size();
+
+    // now send connected channels list to all connected clients
+    for ( int i = 0; i < iMaxNumChannels; i++ )
+    {
+        if ( vecChannels[i].IsConnected() )
+        {
+            // send message
+            qInfo() << "creating and sending broadcasters list message ";
+            vecChannels[i].CreateMixerBroadcastersListMes ( vecBroadcastersList );
+        }
+    }
+
+    //TODO: create status HTML file if enabled. Is this needed in this output??
+//    if ( bWriteStatusHTMLFile )
+//    {
+//        WriteHTMLChannelList();
+//    }
+}
+
+void CServer::CreateAndSendChanPanGainToNewFollower( const int  iFollowerChanID,
+                                                     const int  iBroadcasterChanID ) {
+    if ( iFollowerChanID >= 0 && iFollowerChanID < iMaxNumChannels  &&
+         iBroadcasterChanID >= 0 && iBroadcasterChanID < iMaxNumChannels ) {
+
+        CChannel* pFollower = &vecChannels[iFollowerChanID];
+        CChannel* pBroadcaster = &vecChannels[iBroadcasterChanID];
+
+        if ( pBroadcaster->IsConnected() &&
+             pFollower->IsConnected() &&
+             pBroadcaster->IsBroadcastingMixer() &&
+             pFollower->IsFollowingMixer() )
+        {
+
+
+            for ( int i = 0; i < iMaxNumChannels; i++ ) {
+                if ( vecChannels[i].IsEnabled())  //TODO: enabled, connected or both? what does this mean?
+                {
+                    float fGain = pBroadcaster->GetGain(i);
+                    float fPan = pBroadcaster->GetPan(i);
+
+                    pFollower->SetRemoteChanGain(i, fGain);
+                    pFollower->SetRemoteChanPan(i, fPan);
+                }
+            }
+
+        }
+    }
+}
+
+void CServer::CreateAndSendChanPanToAllFollowers ( const int  iBroadcasterChanID,
+                                                  const int  iOtherChanID,
+                                                  const float fPan )
+{
+
+    // now send connected channels list to all connected clients
+    for ( int i = 0; i < iMaxNumChannels; i++ )
+    {
+        if ( i != iBroadcasterChanID &&
+             vecChannels[i].IsConnected() &&
+             !vecChannels[i].IsBroadcastingMixer() && //not allowed for now to prevent infinite loops
+             vecChannels[i].IsFollowingMixer() &&
+             vecChannels[i].GetFollowingMixerChannel() == iBroadcasterChanID )
+        {
+            // send message
+            qInfo() << "sending pan message to follower...";
+            vecChannels[i].SetRemoteChanPan ( iOtherChanID, fPan );
+        }
+    }
+}
+
+void CServer::CreateAndSendChanGainToAllFollowers ( const int  iBroadcasterChanID,
+                                                  const int  iOtherChanID,
+                                                  const float fGain )
+{
+    // now send connected channels list to all connected clients
+    for ( int i = 0; i < iMaxNumChannels; i++ )
+    {
+        if ( i != iBroadcasterChanID &&
+             vecChannels[i].IsConnected() &&
+             !vecChannels[i].IsBroadcastingMixer() && //not allowed for now to prevent infinite loops
+             vecChannels[i].IsFollowingMixer() &&
+             vecChannels[i].GetFollowingMixerChannel() == iBroadcasterChanID )
+        {
+            // send message
+            qInfo() << "sending pan message to follower...";
+            vecChannels[i].SetRemoteChanGain( iOtherChanID, fGain );
+        }
     }
 }
 
