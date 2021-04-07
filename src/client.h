@@ -132,6 +132,13 @@ public:
 
     bool   IsFollowingMixerBroadcast() { return Channel.IsFollowingMixer(); }
 
+    int GetFollowingMixerChannel() { return Channel.GetFollowingMixerChannel(); }
+
+    bool IsBroadcastingMixer() { return Channel.IsBroadcastingMixer(); }
+    void FollowBroadcastingMixer ( bool bFollow, int iChanID ) {
+        Channel.CreateFollowMixerBroadcasterMes( bFollow, iChanID );
+    }
+
     EGUIDesign GetGUIDesign() const { return eGUIDesign; }
     void       SetGUIDesign ( const EGUIDesign eNGD ) { eGUIDesign = eNGD; }
 
@@ -445,4 +452,5 @@ signals:
     void ControllerInPanValue ( int iChannelIdx, int iValue );
     void ControllerInFaderIsSolo ( int iChannelIdx, bool bIsSolo );
     void ControllerInFaderIsMute ( int iChannelIdx, bool bIsMute );
+    void MixerBroadcastersListReceived ( CVector<int> vecBroadcasters );
 };

@@ -234,6 +234,7 @@ CClientDlg::CClientDlg ( CClient*         pNCliP,
 
     // setup timers
     TimerCheckAudioDeviceOk.setSingleShot ( true ); // only check once after connection
+    iFirstBroadcaster = 0;
 
 
     // Connect on startup ------------------------------------------------------
@@ -522,6 +523,9 @@ CClientDlg::CClientDlg ( CClient*         pNCliP,
 
     QObject::connect ( pClient, &CClient::SoundDeviceChanged,
         this, &CClientDlg::OnSoundDeviceChanged );
+
+    QObject::connect ( pClient, &CClient::MixerBroadcastersListReceived,
+        this, &CClientDlg::OnMixerBroadcastersListReceived );
 
     QObject::connect ( &ClientSettingsDlg, &CClientSettingsDlg::GUIDesignChanged,
         this, &CClientDlg::OnGUIDesignChanged );
@@ -956,6 +960,11 @@ void CClientDlg::OnNumClientsChanged ( int iNewNumClients )
 {
     // update window title
     SetMyWindowTitle ( iNewNumClients );
+}
+
+void CClientDlg::OnFollowStateChange(int state)
+{
+    pClient->FollowBroadcastingMixer( state == Qt::Checked , iFirstBroadcaster );
 }
 
 void CClientDlg::SetMyWindowTitle ( const int iNumClients )
@@ -1436,6 +1445,43 @@ void CClientDlg::OnChangeBroadcastedChanGain(int iChanID, float fGain)
 void CClientDlg::OnChangeBroadcastedChanPan(int iChanID, float fPan)
 {
     MainMixerBoard->SetPanValue(iChanID, ( int )  ( fPan * ( float ) AUD_MIX_PAN_MAX ) );
+}
+
+void CClientDlg::OnMixerBroadcastersListReceived(CVector<int> vecBroadcasters)
+{
+
+
+    if (!pClient->IsBroadcastingMixer() && vecBroadcasters.Size() > 0 )
+    {
+        iFirstBroadcaster = vecBroadcasters[0];
+    }
+
+
+    // for now, just delete all checkboxes, and recreate them
+    // unfortunately, this does not work, for some reason.
+    QList<QWidget *> widgets = followGrid->findChildren<QWidget *>();
+    foreach(QWidget * widget, widgets)
+    {
+        followGrid->removeWidget(widget);
+        delete widget;
+    }
+
+    for ( int i = 0; i < vecBroadcasters.Size(); i++ )
+    {
+        //don't allow to follow yourself
+        if ( vecBroadcasters[i] != MainMixerBoard->GetMyChannelID() )
+        {
+            //TODO: store the client list in client dialog, and use that to set the correct name
+            // update on new client info lists as well.
+            QCheckBox* pCheckBox = new QCheckBox( tr ( "follow %1").arg(vecBroadcasters[i] ) );
+            pCheckBox->setChecked( pClient->IsFollowingMixerBroadcast() && pClient->GetFollowingMixerChannel() == vecBroadcasters[i] );
+            followGrid->addWidget( pCheckBox );
+
+            QObject::connect ( pCheckBox, &QCheckBox::stateChanged,
+                this, &CClientDlg::OnFollowStateChange);
+        }
+    }
+
 }
 
 void CClientDlg::OnRecorderStateReceived (  const ERecorderState newRecorderState )
